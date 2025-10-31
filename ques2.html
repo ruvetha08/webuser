@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Simple Employee Dashboard</title>
+
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- jQuery -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+  <style>
+    /* Basic theme variables */
+    :root {
+      --bg: #f5f7fb;
+      --card: #fff;
+      --text: #1b1b1b;
+      --muted: #6c757d;
+      --accent: #0d6efd;
+    }
+    body { background: var(--bg); color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, Arial; }
+    header, footer { padding: 12px 16px; }
+    .container-card { background: var(--card); border-radius: 10px; padding: 14px; box-shadow: 0 6px 18px rgba(0,0,0,0.06); }
+
+    .avatar { width:44px; height:44px; border-radius:50%; background:#e9f3ff; display:inline-flex; align-items:center; justify-content:center; font-weight:700; color:var(--accent); }
+    .details { display:none; margin-top:10px; }
+
+    /* Dark theme toggled by .dark on body */
+    body.dark { --bg: #0b1220; --card: #0f1724; --text: #eaf2ff; --muted: #9aa7bf; --accent: #66a3ff; }
+
+    /* small responsive tweak */
+    @media (max-width: 767.98px) {
+      aside { order: -1; margin-bottom: 12px; } /* move aside on top for mobile */
+    }
+  </style>
+</head>
+<body>
+
+  <header class="d-flex align-items-center justify-content-between">
+    <div>
+      <h4 class="mb-0">Employee Dashboard</h4>
+      <small class="text-muted">Simple demo — add employees, filter, switch theme</small>
+    </div>
+
+    <div class="d-flex align-items-center gap-2">
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" id="themeToggle">
+        <label class="form-check-label small" for="themeToggle">Dark</label>
+      </div>
+      <button id="resetBtn" class="btn btn-outline-secondary btn-sm">Reset</button>
+    </div>
+  </header>
+
+  <main class="container my-3">
+    <div class="row g-3">
+      <!-- Filters & Add form -->
+      <aside class="col-12 col-md-4">
+        <div class="container-card">
+          <h6>Filters</h6>
+          <div class="mb-2">
+            <label class="form-label small">Department</label>
+            <select id="deptFilter" class="form-select">
+              <option value="All">All</option>
+              <option>Engineering</option>
+              <option>Design</option>
+              <option>HR</option>
+              <option>Sales</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label class="form-label small">Min Score</label>
+            <input id="minScore" type="number" min="0" max="100" value="0" class="form-control" />
+          </div>
+
+          <div class="d-grid gap-2 mb-3">
+            <button id="applyFilter" class="btn btn-primary btn-sm">Apply</button>
+            <button id="clearFilter" class="btn btn-outline-secondary btn-sm">Clear</button>
+          </div>
+
+          <hr>
+
+          <h6>Add Employee</h6>
+          <form id="addForm">
+            <input id="empName" class="form-control mb-2" placeholder="Name" required />
+            <input id="empRole" class="form-control mb-2" placeholder="Role" required />
+            <input id="empDept" class="form-control mb-2" placeholder="Department" required />
+            <input id="empScore" type="number" min="0" max="100" value="75" class="form-control mb-2" />
+            <button class="btn btn-success btn-sm w-100" type="submit">Add</button>
+          </form>
+        </div>
+      </aside>
+
+      <!-- Cards -->
+      <section class="col-12 col-md-8">
+        <div class="container-card">
+          <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0">Team</h6>
+            <div class="small text-muted">Click Details to expand</div>
+          </div>
+
+          <div id="cardsRow" class="row g-3">
+            <!-- employee cards injected here -->
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="text-center small text-muted mb-4">Demo Dashboard</footer>
+
+<script>
+  // Simple client-side data store
+  let employees = [
+    { id: 1, name: "Asha", role: "Frontend", department: "Engineering", score: 88, notes: "Good UI skills" },
+    { id: 2, name: "Ravi", role: "Backend", department: "Engineering", score: 74, notes: "API specialist" },
+    { id: 3, name: "Priya", role: "Designer", department: "Design", score: 92, notes: "Strong UX" }
+  ];
+  let nextId = 4;
+
+  // Render function
+  function render(list) {
+    const container = $("#cardsRow");
+    container.empty();
+    if (list.length === 0) {
+      container.append('<div class="col-12"><div class="p-3 text-center text-muted">No matching employees</div></div>');
+      return;
+    }
+    list.forEach(emp => {
+      const card = $(`
+        <div class="col-12 col-sm-6">
+          <div class="p-3 rounded-3" style="background:var(--card);">
+            <div class="d-flex align-items-start gap-3">
+              <div class="avatar">${emp.name.split(' ').map(s=>s[0]).slice(0,2).join('')}</div>
+              <div class="flex-grow-1">
+                <div class="d-flex justify-content-between">
+                  <div>
+                    <div style="font-weight:700">${emp.name}</div>
+                    <div class="small text-muted">${emp.role} · ${emp.department}</div>
+                  </div>
+                  <div class="text-end">
+                    <div class="small text-muted">Score</div>
+                    <div style="font-weight:700">${emp.score}%</div>
+                  </div>
+                </div>
+
+                <div class="mt-2">
+                  <div class="progress" style="height:8px;">
+                    <div class="progress-bar" role="progressbar" style="width:${emp.score}%"></div>
+                  </div>
+                </div>
+
+                <div class="mt-2">
+                  <button class="btn btn-sm btn-outline-secondary details-btn">Details</button>
+                </div>
+
+                <div class="details p-2 bg-light rounded mt-2">
+                  <div><strong>Notes:</strong> ${emp.notes || '-'}</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `);
+      container.append(card);
+    });
+
+    // wire up details toggle using jQuery slideToggle
+    container.find(".details-btn").off('click').on('click', function(){
+      $(this).closest('.col-12, .col-sm-6').find('.details').first().slideToggle(180);
+    });
+  }
+
+  // Initial render
+  $(function(){
+    render(employees);
+
+    // Theme toggle
+    const saved = localStorage.getItem('simple-dashboard-theme');
+    if (saved === 'dark') { $('body').addClass('dark'); $('#themeToggle').prop('checked', true); }
+    $('#themeToggle').on('change', function(){
+      if (this.checked) { $('body').addClass('dark'); localStorage.setItem('simple-dashboard-theme','dark'); }
+      else { $('body').removeClass('dark'); localStorage.setItem('simple-dashboard-theme','light'); }
+    });
+
+    // Add employee (get input from user)
+    $('#addForm').on('submit', function(e){
+      e.preventDefault();
+      const name = $('#empName').val().trim();
+      const role = $('#empRole').val().trim();
+      const dept = $('#empDept').val().trim();
+      const score = Number($('#empScore').val()) || 0;
+      if (!name || !role || !dept) {
+        alert('Fill Name, Role, Department.');
+        return;
+      }
+      employees.push({ id: nextId++, name, role, department: dept, score, notes: 'Added by user' });
+      render(employees);
+      this.reset();
+    });
+
+    // Filtering
+    $('#applyFilter').on('click', function(){
+      const dept = $('#deptFilter').val();
+      const min = Number($('#minScore').val()) || 0;
+      const filtered = employees.filter(e => (dept === 'All' || e.department === dept) && e.score >= min);
+      render(filtered);
+    });
+    $('#clearFilter').on('click', function(){
+      $('#deptFilter').val('All'); $('#minScore').val(0);
+      render(employees);
+    });
+
+    // Reset demo to initial state
+    $('#resetBtn').on('click', function(){
+      employees = [
+        { id: 1, name: "Asha", role: "Frontend", department: "Engineering", score: 88, notes: "Good UI skills" },
+        { id: 2, name: "Ravi", role: "Backend", department: "Engineering", score: 74, notes: "API specialist" },
+        { id: 3, name: "Priya", role: "Designer", department: "Design", score: 92, notes: "Strong UX" }
+      ];
+      nextId = 4;
+      render(employees);
+      $('#deptFilter').val('All'); $('#minScore').val(0);
+    });
+  });
+</script>
+
+</body>
+</html>
